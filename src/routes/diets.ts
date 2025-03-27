@@ -38,4 +38,19 @@ export async function dietsRoute(app: FastifyInstance) {
             ])
             return reply.status(201).send(createdMeal)
         })
+
+    app.get(
+        "/all", {
+        preHandler: [checkSessionIdExists]
+    }, async (request, response) => {
+
+        const user = await db("users")
+            .where({ session_id: request.cookies.session_id })
+            .first()
+
+        const meals = await db("meals").select().where("user_id", user.id)
+
+        return response.status(200).send({ meals })
+    }
+    )
 }
