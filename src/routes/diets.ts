@@ -83,6 +83,11 @@ export async function dietsRoute(app: FastifyInstance) {
                 }) //Busca a refeição
                 .first()
 
+            if (!meal) {
+                return response.status(404).send({
+                    message: "Refeição não existe"
+                })
+            }
             return response.status(200).send({
                 meal
             })
@@ -112,14 +117,11 @@ export async function dietsRoute(app: FastifyInstance) {
             request.body
         )
 
-        const mealDb = await db("meals")
-            .where({
-                user_id: request.cookies.session_id,
-                id: id
-            }).first()
-
         const [updatedMeal] = await db("meals")
-            .where({ id })
+            .where({
+                user_id: request.user?.id,
+                id
+            })
             .update({
                 name: mealRequest.name,
                 description: mealRequest.description,
@@ -137,4 +139,58 @@ export async function dietsRoute(app: FastifyInstance) {
         return response.status(200).send(updatedMeal)
     }
     )
+
+    app.delete("/:id", {
+        preHandler: [checkSessionIdExists]
+    },
+        async (request, response) => {
+
+            const checkIdParams = z.object({
+                id: z.string().uuid()
+            })
+
+            const { id } = checkIdParams.parse(
+                request.params
+            )
+
+            await db("meals")
+                .delete()
+                .where({
+                    user_id: request.user?.id,
+                    id
+                })
+
+            return response.status(200).send({
+                message: "Refeição excluída com sucesso"
+            })
+        })
+
+    app.get("/summary", {
+        preHandler: [checkSessionIdExists]
+    },
+        async (request, response) => {
+
+            const [{ totalMeals }] = await db("meals")
+                .select().where({
+                    user_id: request.user?.id,
+                }).count("* as totalMeals")
+
+            const [{ mealsOnDiet }] = await db("meals")
+                .select().where({
+                    user_id: request.user?.id,
+                    is_on_diet: true
+                }).count("* as mealsOnDiet")
+
+            const [{ mealsNotOnDiet }] = await db("meals")
+                .select().where({
+                    user_id: request.user?.id,
+                    is_on_diet: false
+                }).count("* as mealsNotOnDiet")
+
+            return response.status(200).send({
+                totalMeals,
+                mealsOnDiet,
+                mealsNotOnDiet
+            })
+        })
 }
