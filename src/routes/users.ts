@@ -3,15 +3,10 @@ import { z } from "zod"
 import path from "path";
 import { db } from "../../knexfile"
 
-
-
-
-
 export async function userRoute(app: FastifyInstance) {
 
-
-
-    app.post("/", async (request, response) => {
+    // Criar Usuário
+    app.post("/create", async (request, response) => {
 
         //Validation
         const createUserSchema = z.object({
@@ -22,6 +17,7 @@ export async function userRoute(app: FastifyInstance) {
             request.body
         )
 
+        //Gerando/Validando Cookie
         let sessionId = crypto.randomUUID()
 
         response.cookie("session_id", sessionId, {
