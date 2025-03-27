@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { date, z } from "zod"
 import { checkSessionIdExists } from "../middlewares/check-session-id-exists";
 import { db } from "../../knexfile";
+import { randomUUID } from "crypto";
 
 
 export async function dietsRoute(app: FastifyInstance) {
@@ -52,5 +53,28 @@ export async function dietsRoute(app: FastifyInstance) {
 
         return response.status(200).send({ meals })
     }
+    )
+
+    app.get("/:id",
+        {
+            preHandler: [checkSessionIdExists]
+        },
+        async (request) => {
+
+            //Validação
+            const createMealsParamsSchema = z.object({
+                id: z.string().uuid()
+            })
+
+            const { id } = createMealsParamsSchema.parse(
+                request.params
+            )
+
+            const user = await db("users").where({ session_id: request.cookies.session_id }).first()
+
+            const meal = await db("meals").where({user_id: user.id}).first()
+
+            return { meal }
+        }
     )
 }
