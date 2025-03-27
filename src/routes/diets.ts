@@ -187,10 +187,27 @@ export async function dietsRoute(app: FastifyInstance) {
                     is_on_diet: false
                 }).count("* as mealsNotOnDiet")
 
+            const meals = await db("meals")
+                .where({ user_id: request.user?.id })
+                .orderBy("date", "asc");
+
+            let currentSequence = 0;
+            let bestSequence = 0;
+
+            for (const meal of meals) {
+                if (meal.is_on_diet) {
+                    currentSequence++;
+                    bestSequence = Math.max(bestSequence, currentSequence);
+                } else {
+                    currentSequence = 0;
+                }
+            }
+
             return response.status(200).send({
                 totalMeals,
                 mealsOnDiet,
-                mealsNotOnDiet
+                mealsNotOnDiet,
+                bestSequence
             })
         })
 }
