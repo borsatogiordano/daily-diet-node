@@ -62,11 +62,11 @@ export async function dietsRoute(app: FastifyInstance) {
         async (request, response) => {
 
             //Validação
-            const createMealsParamsSchema = z.object({
+            const checkMealsParamsSchema = z.object({
                 id: z.string().uuid()
             })
-            
-            const { id } = createMealsParamsSchema.parse(
+
+            const { id } = checkMealsParamsSchema.parse(
                 request.params
             )
 
@@ -77,13 +77,64 @@ export async function dietsRoute(app: FastifyInstance) {
             }
 
             const meal = await db("meals")
-            .where({ user_id: request.user?.id, //Busca o usuário
-                id: id}) //Busca a refeição
-            .first()
+                .where({
+                    user_id: request.user?.id, //Busca o usuário
+                    id: id
+                }) //Busca a refeição
+                .first()
 
             return response.status(200).send({
                 meal
             })
         }
+    )
+
+    app.put("/:id", {
+        preHandler: [checkSessionIdExists]
+    }, async (request, response) => {
+
+        const checkIdParams = z.object({
+            id: z.string().uuid()
+        })
+
+        const { id } = checkIdParams.parse(
+            request.params
+        )
+
+        const checkMealBodySchema = z.object({
+            name: z.string(),
+            description: z.string(),
+            isOnDiet: z.boolean(),
+            date: z.coerce.date(),
+        })
+
+        const mealRequest = checkMealBodySchema.parse(
+            request.body
+        )
+
+        const mealDb = await db("meals")
+            .where({
+                user_id: request.cookies.session_id,
+                id: id
+            }).first()
+
+        const [updatedMeal] = await db("meals")
+            .where({ id })
+            .update({
+                name: mealRequest.name,
+                description: mealRequest.description,
+                is_on_diet: mealRequest.isOnDiet,
+                date: mealRequest.date.getTime()
+            }).returning([
+                "id",
+                "user_id",
+                "name",
+                "description",
+                "is_on_diet",
+                "date"
+            ])
+
+        return response.status(200).send(updatedMeal)
+    }
     )
 }
