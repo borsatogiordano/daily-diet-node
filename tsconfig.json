@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ESNext",
     "module": "commonjs",
-    "rootDir": "./src",
+    "rootDir": "./",
     "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
@@ -10,5 +10,5 @@
     "forceConsistentCasingInFileNames": true
   },
   "include": ["src/**/*","knexfile.ts"],
-  "exclude": ["node_modules", "**/*.spec.ts", "knexfile.ts"]
+  "exclude": ["node_modules", "**/*.spec.ts"]
 }
