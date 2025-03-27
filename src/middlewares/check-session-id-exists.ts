@@ -1,15 +1,24 @@
 
 import { FastifyReply, FastifyRequest } from "fastify";
+import { db } from "../../knexfile";
+import { FastifyInstance } from "fastify";
+
 
 export async function checkSessionIdExists(
     request: FastifyRequest,
-    response: FastifyReply
-) {
-    const sessionId = request.cookies.sessionId
-
+    reply: FastifyReply,
+  ) {
+    const sessionId = request.cookies.session_id
+  
     if (!sessionId) {
-        return response.status(401).send({
-            error: "Você só pode editar/criar sendo um um usuário cadastrado"
-        })
+      return reply.status(401).send({ error: 'Unauthorized' })
     }
-}
+  
+    const user = await db('users').where({ session_id: sessionId }).first()
+  
+    if (!user) {
+      return reply.status(401).send({ error: 'Unauthorized' })
+    }
+  
+    request.user = user
+  }
