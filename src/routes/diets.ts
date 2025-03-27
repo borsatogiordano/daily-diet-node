@@ -59,22 +59,31 @@ export async function dietsRoute(app: FastifyInstance) {
         {
             preHandler: [checkSessionIdExists]
         },
-        async (request) => {
+        async (request, response) => {
 
             //Validação
             const createMealsParamsSchema = z.object({
                 id: z.string().uuid()
             })
-
+            
             const { id } = createMealsParamsSchema.parse(
                 request.params
             )
 
             const user = await db("users").where({ session_id: request.cookies.session_id }).first()
 
-            const meal = await db("meals").where({user_id: user.id}).first()
+            if (!user) {
+                return response.status(401).send({ error: "Unauthorized" });
+            }
 
-            return { meal }
+            const meal = await db("meals")
+            .where({ user_id: request.user?.id, //Busca o usuário
+                id: id}) //Busca a refeição
+            .first()
+
+            return response.status(200).send({
+                meal
+            })
         }
     )
 }
